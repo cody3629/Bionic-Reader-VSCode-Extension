@@ -1,0 +1,102 @@
+{
+  "name": "bionic-code-reader",
+  "displayName": "Bionic Code Reader",
+  "description": "Apply configurable Bionic-style emphasis directly to source code in the VS Code editor.",
+  "version": "0.1.0",
+  "publisher": "local-experiment",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bionicCodeReader.toggle",
+        "title": "Bionic Code Reader: Toggle"
+      },
+      {
+        "command": "bionicCodeReader.increaseStrength",
+        "title": "Bionic Code Reader: Increase Fixation Strength"
+      },
+      {
+        "command": "bionicCodeReader.decreaseStrength",
+        "title": "Bionic Code Reader: Decrease Fixation Strength"
+      },
+      {
+        "command": "bionicCodeReader.toggleSaccades",
+        "title": "Bionic Code Reader: Toggle Saccades"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "bionicCodeReader.toggle",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b"
+      }
+    ],
+    "configuration": {
+      "title": "Bionic Code Reader",
+      "properties": {
+        "bionicCodeReader.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Apply Bionic-style emphasis in supported text editors."
+        },
+        "bionicCodeReader.fixationStrength": {
+          "type": "number",
+          "default": 0.35,
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "description": "Fraction of each word emphasized, rounded up. Higher values emphasize more characters."
+        },
+        "bionicCodeReader.saccades": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of words skipped after each emphasized word. 0 emphasizes every word; 1 skips every second word."
+        },
+        "bionicCodeReader.fontWeight": {
+          "type": "string",
+          "default": "700",
+          "enum": [
+            "500",
+            "600",
+            "700",
+            "800",
+            "900"
+          ],
+          "description": "Font weight used for emphasized characters."
+        },
+        "bionicCodeReader.excludedLanguages": {
+          "type": "array",
+          "default": [
+            "log"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Language IDs that should not receive Bionic formatting."
+        },
+        "bionicCodeReader.updateDelay": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Debounce delay in milliseconds after editing."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check": "node --check src/extension.js"
+  },
+  "license": "MIT"
+}
