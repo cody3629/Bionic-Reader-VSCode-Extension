@@ -89,11 +89,11 @@ function adjustStrength(delta) {
   );
 }
 
-function adjustMinimumWordLength(integer) {
+async function adjustMinimumWordLength(integer) {
   const config = getConfig();
   const current = config.get("minimumWordLength", 1);
   const next = Math.max(1, Math.min(20, current + integer));
-  updateSetting("minimumWordLength", next);
+  await updateSetting("minimumWordLength", next);
   scheduleRefresh();
   vscode.window.setStatusBarMessage(
     `Bionic minimum word length: ${next}`,
@@ -101,10 +101,10 @@ function adjustMinimumWordLength(integer) {
   );
 }
 
-function adjustSaccades(delta) {
+async function adjustSaccades(delta) {
   const config = getConfig();
   const next = Math.max(0, Math.min(10, config.get("saccades", 0) + delta));
-  updateSetting("saccades", next);
+  await updateSetting("saccades", next);
   scheduleRefresh();
   vscode.window.setStatusBarMessage(`Bionic saccades: ${next}`, 2500);
 }

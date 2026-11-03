@@ -27,7 +27,8 @@ function getEmphasisRanges(text, options = {}) {
 
     while ((match = wordPattern.exec(sourceLine)) !== null) {
       const word = match[0];
-      if ([...word].length < minimumWordLength) continue;
+      const codePoints = [...word];
+      if (codePoints.length < minimumWordLength) continue;
 
       const shouldEmphasize = eligibleWordIndex % (saccades + 1) === 0;
       eligibleWordIndex += 1;
@@ -35,12 +36,13 @@ function getEmphasisRanges(text, options = {}) {
 
       const count = Math.max(
         1,
-        Math.min(word.length, Math.ceil(word.length * strength)),
+        Math.min(codePoints.length, Math.ceil(codePoints.length * strength)),
       );
+      const emphasizedPrefix = codePoints.slice(0, count).join("");
       ranges.push({
         line,
         start: match.index,
-        end: match.index + count,
+        end: match.index + emphasizedPrefix.length,
         word,
       });
     }

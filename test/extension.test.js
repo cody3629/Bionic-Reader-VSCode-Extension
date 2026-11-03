@@ -120,3 +120,35 @@ describe("value clamping", () => {
     expect(lastValue()).toBe(0);
   });
 });
+
+describe("awaited setting updates", () => {
+  const delayedUpdate = (key, value) =>
+    new Promise((resolve) => {
+      setTimeout(() => {
+        mockState.values[key] = value;
+        resolve();
+      }, 0);
+    });
+
+  test("minimum word length commands apply sequential increments", async () => {
+    mockState.update
+      .mockImplementationOnce(delayedUpdate)
+      .mockImplementationOnce(delayedUpdate);
+
+    await run("bionicCodeReader.increaseMinimumWordLength");
+    await run("bionicCodeReader.increaseMinimumWordLength");
+
+    expect(mockState.values.minimumWordLength).toBe(3);
+  });
+
+  test("saccade commands apply sequential increments", async () => {
+    mockState.update
+      .mockImplementationOnce(delayedUpdate)
+      .mockImplementationOnce(delayedUpdate);
+
+    await run("bionicCodeReader.increaseSaccades");
+    await run("bionicCodeReader.increaseSaccades");
+
+    expect(mockState.values.saccades).toBe(2);
+  });
+});

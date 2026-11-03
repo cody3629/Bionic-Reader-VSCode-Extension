@@ -57,6 +57,13 @@ test("handles CRLF and Unicode letters", () => {
   ]);
 });
 
+test("fixation ranges keep astral Unicode characters intact", () => {
+  const result = getEmphasisRanges("𐐀𐐁ab", { fixationStrength: 0.35 });
+  expect(result.map(({ start, end, word }) => [start, end, word])).toEqual([
+    [0, 4, "𐐀𐐁ab"],
+  ]);
+});
+
 test("minimum length and saccades are clamped safely", () => {
   expect(
     words(getEmphasisRanges("a bb ccc dddd", { minimumWordLength: 0 })),
