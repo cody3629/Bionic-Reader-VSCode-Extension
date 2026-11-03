@@ -24,7 +24,7 @@ function updateSetting(key, value) {
 function createDecoration() {
   if (decoration) decoration.dispose();
   decoration = vscode.window.createTextEditorDecorationType({
-    fontWeight: getConfig().get("fontWeight", "700"),
+    fontWeight: getConfig().get("fontWeight", "600"),
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
   });
 }
@@ -35,7 +35,9 @@ function getRenderWindows(editor) {
   const { visibleRanges } = editor;
   const lastDocumentLine = Math.max(0, editor.document.lineCount - 1);
   if (visibleRanges.length === 0) {
-    return [{ startLine: 0, endLine: Math.min(lastDocumentLine, windowMargin * 2) }];
+    return [
+      { startLine: 0, endLine: Math.min(lastDocumentLine, windowMargin * 2) },
+    ];
   }
 
   const windows = visibleRanges
@@ -257,6 +259,12 @@ function activate(context) {
     vscode.commands.registerCommand("bionicCodeReader.toggleSaccades", () => {
       toggleSaccades();
     }),
+    vscode.commands.registerCommand("bionicCodeReader.increaseDelay", () =>
+      adjustDelay(10),
+    ),
+    vscode.commands.registerCommand("bionicCodeReader.decreaseDelay", () =>
+      adjustDelay(-10),
+    ),
     vscode.window.onDidChangeActiveTextEditor(refreshEditor),
     vscode.window.onDidChangeVisibleTextEditors(refreshVisibleEditors),
     vscode.window.onDidChangeTextEditorVisibleRanges(scheduleRefresh),

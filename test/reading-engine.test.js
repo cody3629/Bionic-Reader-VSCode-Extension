@@ -112,24 +112,20 @@ test("a lone carriage return starts a new line", () => {
   ]);
 });
 
-test("a line window returns the same ranges as the full result for those lines", () => {
-  const text = Array.from({ length: 20 }, () => "a bb ccc dddd").join("\n");
+test("selected lines with a prior word count match the full result for those lines", () => {
+  const lines = Array.from({ length: 20 }, () => "a bb ccc dddd");
   const options = { saccades: 2 };
-  const full = getEmphasisRanges(text, options);
-  const windowed = getEmphasisRanges(text, {
-    ...options,
-    startLine: 5,
-    endLine: 9,
-  });
+  const full = getEmphasisRanges(lines.join("\n"), options);
+  const eligibleWordOffset = lines
+    .slice(0, 5)
+    .reduce((sum, text) => sum + countEligibleWords(text), 0);
+  const windowed = getEmphasisRangesForLines(
+    lines.slice(5, 10).map((text, index) => ({ line: 5 + index, text })),
+    { ...options, eligibleWordOffset },
+  );
 
   expect(windowed.length).toBeGreaterThan(0);
   expect(windowed).toEqual(full.filter((r) => r.line >= 5 && r.line <= 9));
-});
-
-test("invalid line window values are ignored", () => {
-  const text = "one\ntwo\nthree";
-  const full = getEmphasisRanges(text);
-  expect(getEmphasisRanges(text, { startLine: "x", endLine: NaN })).toEqual(full);
 });
 
 test("processes selected lines using the eligible-word offset from prior lines", () => {
