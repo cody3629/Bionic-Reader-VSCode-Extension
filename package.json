@@ -1,9 +1,13 @@
 {
   "name": "bionic-code-reader",
   "displayName": "Bionic Code Reader",
-  "description": "Apply configurable Bionic-style emphasis directly to source code in the VS Code editor.",
-  "version": "0.1.0",
+  "description": "Configurable Bionic-style emphasis for source code, with an independently testable reading algorithm.",
+  "version": "0.2.0",
   "publisher": "local-experiment",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cody3629/Bionic-Reader-VSCode-Extension"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -30,6 +34,22 @@
         "title": "Bionic Code Reader: Decrease Fixation Strength"
       },
       {
+        "command": "bionicCodeReader.increaseMinimumWordLength",
+        "title": "Bionic Code Reader: Increase Minimum Word Length"
+      },
+      {
+        "command": "bionicCodeReader.decreaseMinimumWordLength",
+        "title": "Bionic Code Reader: Decrease Minimum Word Length"
+      },
+      {
+        "command": "bionicCodeReader.increaseSaccades",
+        "title": "Bionic Code Reader: Increase Saccades"
+      },
+      {
+        "command": "bionicCodeReader.decreaseSaccades",
+        "title": "Bionic Code Reader: Decrease Saccades"
+      },
+      {
         "command": "bionicCodeReader.toggleSaccades",
         "title": "Bionic Code Reader: Toggle Saccades"
       }
@@ -53,27 +73,35 @@
           "type": "number",
           "default": 0.35,
           "minimum": 0.1,
-          "maximum": 1.0,
-          "description": "Fraction of each word emphasized, rounded up. Higher values emphasize more characters."
+          "maximum": 1,
+          "description": "Fraction of each eligible word emphasized, rounded up."
         },
         "bionicCodeReader.saccades": {
           "type": "integer",
           "default": 0,
           "minimum": 0,
           "maximum": 10,
-          "description": "Number of words skipped after each emphasized word. 0 emphasizes every word; 1 skips every second word."
+          "description": "Number of eligible words skipped after each emphasized word. 0 emphasizes every eligible word."
+        },
+        "bionicCodeReader.minimumWordLength": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Words shorter than this length are left unformatted and do not count toward saccades."
         },
         "bionicCodeReader.fontWeight": {
           "type": "string",
           "default": "700",
           "enum": [
+            "400",
             "500",
             "600",
             "700",
             "800",
             "900"
           ],
-          "description": "Font weight used for emphasized characters."
+          "description": "Font weight for emphasized characters. This does not change editor.fontWeight."
         },
         "bionicCodeReader.excludedLanguages": {
           "type": "array",
@@ -96,7 +124,14 @@
     }
   },
   "scripts": {
-    "check": "node --check src/extension.js"
+    "check": "node --check src/extension.js && node --check src/reading-engine.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "package": "vsce package"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@vscode/vsce": "^4.1.0",
+    "jest": "^30.5.2"
+  }
 }
