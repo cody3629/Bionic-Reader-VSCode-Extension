@@ -1,13 +1,16 @@
 # Bionic Code Reader 0.2.0
 
-A dependency-free VS Code extension that applies Bionic-style emphasis as editor decorations. It does not rewrite source files, change clipboard contents, or modify your editor's base font weight.
+A lightweight VS Code extension that applies Bionic-style emphasis as editor decorations. It does not rewrite source files, change clipboard contents, or modify your editor's base font weight.
 
 ## What's new in 0.2.0
 
 - Independent emphasis weight (`bionicCodeReader.fontWeight`); your `editor.fontWeight` stays untouched.
 - Minimum word length, so short words can be ignored.
-- Reading algorithm extracted into a pure module and covered by automated unit tests.
-- Jest unit tests; no runtime dependencies.
+- New commands to increase/decrease minimum word length and saccades (0–10), alongside the existing saccades toggle.
+- Commands write to workspace settings when the workspace already overrides that setting, and to user settings otherwise.
+- Reading algorithm extracted into a pure module.
+- Jest unit tests cover the reading algorithm and the extension commands; no runtime dependencies.
+- `npm run package` builds a `.vsix` using the locally installed `@vscode/vsce`.
 
 ## Settings
 
@@ -38,8 +41,21 @@ npm test
 npm run check
 ```
 
-The reading engine is intentionally independent of VS Code so its segmentation and reading behavior can be tested quickly with Node. Tests cover fixation strength, saccades, minimum word length, offsets across lines, Unicode letters, clamping, empty input, and source-text immutability.
+`npm run test:watch` re-runs Jest on changes.
+
+The reading engine is intentionally independent of VS Code so its segmentation and reading behavior can be tested quickly. Its tests cover fixation strength, saccades, minimum word length, offsets across lines, Unicode letters, clamping, empty input, and source-text immutability. The extension tests mock the `vscode` API to check command registration, settings scope, and value limits.
+
+## Packaging
+
+```sh
+npm install
+npm run package
+```
+
+This produces a `.vsix` file in the project root.
 
 ## Current limitations
 
 This release is language-agnostic: it emphasizes word starts across identifiers, keywords, comments, strings, and numbers alike. It does not yet classify syntax tokens or offer separate controls for keywords, identifiers, comments, strings, or per-language profiles. Those are candidates for a later syntax-aware release.
+
+Settings apply to the whole window. Per-folder settings in multi-root workspaces are not supported.

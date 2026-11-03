@@ -131,6 +131,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@vscode/vsce": "^4.1.0",
     "jest": "^30.5.2"
   }
 }

@@ -8,7 +8,7 @@ const mockState = {
 jest.mock(
   "vscode",
   () => ({
-    ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
+    ConfigurationTarget: { Global: 1, Workspace: 2 },
     DecorationRangeBehavior: { ClosedClosed: 1 },
     Range: class {},
     Position: class {},
@@ -42,7 +42,7 @@ jest.mock(
 const { activate, deactivate } = require("../src/extension");
 const manifest = require("../package.json");
 
-const Target = { Global: 1, Workspace: 2, WorkspaceFolder: 3 };
+const Target = { Global: 1, Workspace: 2 };
 
 beforeAll(() => activate({ subscriptions: [] }));
 afterAll(() => deactivate());
@@ -74,15 +74,6 @@ describe("settings scope", () => {
     mockState.inspect.fixationStrength = { workspaceValue: 0.5 };
     run("bionicCodeReader.increaseStrength");
     expect(mockState.update.mock.calls[0][2]).toBe(Target.Workspace);
-  });
-
-  test("WorkspaceFolder takes priority over Workspace", () => {
-    mockState.inspect.fixationStrength = {
-      workspaceValue: 0.5,
-      workspaceFolderValue: 0.6,
-    };
-    run("bionicCodeReader.increaseStrength");
-    expect(mockState.update.mock.calls[0][2]).toBe(Target.WorkspaceFolder);
   });
 });
 

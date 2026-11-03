@@ -27,7 +27,7 @@ function getEmphasisRanges(text, options = {}) {
 
     while ((match = wordPattern.exec(sourceLine)) !== null) {
       const word = match[0];
-      if (word.length < minimumWordLength) continue;
+      if ([...word].length < minimumWordLength) continue;
 
       const shouldEmphasize = eligibleWordIndex % (saccades + 1) === 0;
       eligibleWordIndex += 1;

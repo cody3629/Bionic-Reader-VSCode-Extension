@@ -8,15 +8,12 @@ function getConfig() {
   return vscode.workspace.getConfiguration("bionicCodeReader");
 }
 
-// Writes to the most specific scope that already overrides the key, so the change is not masked.
 function updateSetting(key, value) {
   const info = getConfig().inspect(key);
-  let target = vscode.ConfigurationTarget.Global;
-  if (info?.workspaceFolderValue !== undefined) {
-    target = vscode.ConfigurationTarget.WorkspaceFolder;
-  } else if (info?.workspaceValue !== undefined) {
-    target = vscode.ConfigurationTarget.Workspace;
-  }
+  const target =
+    info?.workspaceValue !== undefined
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
   return getConfig().update(key, value, target);
 }
 
