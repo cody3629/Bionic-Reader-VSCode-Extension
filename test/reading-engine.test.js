@@ -1,4 +1,8 @@
-const { getEmphasisRanges } = require("../src/reading-engine");
+const {
+  countEligibleWords,
+  getEmphasisRanges,
+  getEmphasisRangesForLines,
+} = require("../src/reading-engine");
 
 const words = (ranges) => ranges.map((range) => range.word);
 
@@ -126,4 +130,23 @@ test("invalid line window values are ignored", () => {
   const text = "one\ntwo\nthree";
   const full = getEmphasisRanges(text);
   expect(getEmphasisRanges(text, { startLine: "x", endLine: NaN })).toEqual(full);
+});
+
+test("processes selected lines using the eligible-word offset from prior lines", () => {
+  const result = getEmphasisRangesForLines(
+    [
+      { line: 8, text: "third fourth" },
+      { line: 12, text: "fifth" },
+    ],
+    { saccades: 1, eligibleWordOffset: 2 },
+  );
+
+  expect(result.map(({ line, word }) => [line, word])).toEqual([
+    [8, "third"],
+    [12, "fifth"],
+  ]);
+});
+
+test("counts eligible words using the configured minimum length", () => {
+  expect(countEligibleWords("a café 𐐀𐐁b", 2)).toBe(2);
 });
