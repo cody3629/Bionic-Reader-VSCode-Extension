@@ -107,3 +107,23 @@ test("a lone carriage return starts a new line", () => {
     [1, "cd"],
   ]);
 });
+
+test("a line window returns the same ranges as the full result for those lines", () => {
+  const text = Array.from({ length: 20 }, () => "a bb ccc dddd").join("\n");
+  const options = { saccades: 2 };
+  const full = getEmphasisRanges(text, options);
+  const windowed = getEmphasisRanges(text, {
+    ...options,
+    startLine: 5,
+    endLine: 9,
+  });
+
+  expect(windowed.length).toBeGreaterThan(0);
+  expect(windowed).toEqual(full.filter((r) => r.line >= 5 && r.line <= 9));
+});
+
+test("invalid line window values are ignored", () => {
+  const text = "one\ntwo\nthree";
+  const full = getEmphasisRanges(text);
+  expect(getEmphasisRanges(text, { startLine: "x", endLine: NaN })).toEqual(full);
+});

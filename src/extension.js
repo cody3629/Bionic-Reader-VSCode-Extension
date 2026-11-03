@@ -25,7 +25,22 @@ function createDecoration() {
   });
 }
 
-function getRanges(document) {
+const windowMargin = 100;
+
+function getRenderWindow(editor) {
+  const { visibleRanges } = editor;
+  if (visibleRanges.length === 0) {
+    return { startLine: 0, endLine: windowMargin * 2 };
+  }
+  const first = Math.min(...visibleRanges.map((r) => r.start.line));
+  const last = Math.max(...visibleRanges.map((r) => r.end.line));
+  return {
+    startLine: Math.max(0, first - windowMargin),
+    endLine: last + windowMargin,
+  };
+}
+
+function getRanges(document, lines) {
   const config = getConfig();
   const excluded = config.get("excludedLanguages", ["log"]);
   if (excluded.includes(document.languageId)) return [];
@@ -35,6 +50,7 @@ function getRanges(document) {
     fixationStrength: config.get("fixationStrength", 0.35),
     saccades: config.get("saccades", 0),
     minimumWordLength: config.get("minimumWordLength", 1),
+    ...lines,
   }).map(
     (item) =>
       new vscode.Range(
@@ -49,7 +65,7 @@ function refreshEditor(editor) {
   const isEnabled = getConfig().get("enabled", true);
   editor.setDecorations(
     decoration,
-    isEnabled ? getRanges(editor.document) : [],
+    isEnabled ? getRanges(editor.document, getRenderWindow(editor)) : [],
   );
 }
 
@@ -150,6 +166,7 @@ function activate(context) {
     }),
     vscode.window.onDidChangeActiveTextEditor(refreshEditor),
     vscode.window.onDidChangeVisibleTextEditors(refreshVisibleEditors),
+    vscode.window.onDidChangeTextEditorVisibleRanges(scheduleRefresh),
     vscode.workspace.onDidChangeTextDocument((event) => {
       if (
         vscode.window.visibleTextEditors.some(

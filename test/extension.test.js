@@ -10,8 +10,18 @@ jest.mock(
   () => ({
     ConfigurationTarget: { Global: 1, Workspace: 2 },
     DecorationRangeBehavior: { ClosedClosed: 1 },
-    Range: class {},
-    Position: class {},
+    Range: class {
+      constructor(start, end) {
+        this.start = start;
+        this.end = end;
+      }
+    },
+    Position: class {
+      constructor(line, character) {
+        this.line = line;
+        this.character = character;
+      }
+    },
     commands: {
       registerCommand: (name, handler) => {
         mockState.commands[name] = handler;
@@ -24,6 +34,7 @@ jest.mock(
       createTextEditorDecorationType: () => ({ dispose() {} }),
       onDidChangeActiveTextEditor: () => ({ dispose() {} }),
       onDidChangeVisibleTextEditors: () => ({ dispose() {} }),
+      onDidChangeTextEditorVisibleRanges: () => ({ dispose() {} }),
     },
     workspace: {
       getConfiguration: () => ({
@@ -150,5 +161,50 @@ describe("awaited setting updates", () => {
     await run("bionicCodeReader.increaseSaccades");
 
     expect(mockState.values.saccades).toBe(2);
+  });
+});
+
+describe("render window", () => {
+  const vscode = require("vscode");
+  const makeEditor = (visibleRanges) => ({
+    visibleRanges,
+    document: {
+      languageId: "javascript",
+      fileName: "big.js",
+      lineCount: 1000,
+      getText: () =>
+        Array.from({ length: 1000 }, () => "alpha beta").join("\n"),
+    },
+    setDecorations: jest.fn(),
+  });
+  const range = (start, end) => ({
+    start: { line: start },
+    end: { line: end },
+  });
+  const decoratedLines = async (editor) => {
+    vscode.window.visibleTextEditors = [editor];
+    await run("bionicCodeReader.toggle");
+    return editor.setDecorations.mock.calls.at(-1)[1].map((r) => r.start.line);
+  };
+
+  afterEach(() => {
+    vscode.window.visibleTextEditors = [];
+  });
+
+  test("decorates only the viewport plus a margin", async () => {
+    const lines = await decoratedLines(makeEditor([range(500, 540)]));
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([400, 640]);
+  });
+
+  test("spans all visible ranges when code is folded", async () => {
+    const lines = await decoratedLines(
+      makeEditor([range(300, 310), range(700, 710)]),
+    );
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([200, 810]);
+  });
+
+  test("falls back to the top of the file when there are no visible ranges", async () => {
+    const lines = await decoratedLines(makeEditor([]));
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([0, 200]);
   });
 });

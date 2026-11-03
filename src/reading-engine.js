@@ -5,7 +5,8 @@
 
 /**
  * @param {string} text
- * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number }} options
+ * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number, startLine?: number, endLine?: number }} options
+ * startLine/endLine (0-based, inclusive) limit which lines produce ranges; saccade counting still starts at line 0.
  * @returns {Array<{ line: number, start: number, end: number, word: string }>}
  */
 function getEmphasisRanges(text, options = {}) {
@@ -14,13 +15,17 @@ function getEmphasisRanges(text, options = {}) {
   const minimumWordLength = Math.floor(
     clampNumber(options.minimumWordLength, 1, 1, 20),
   );
+  const startLine = Math.floor(clampNumber(options.startLine, 0, 0, Infinity));
+  const endLine = Math.floor(
+    clampNumber(options.endLine, Infinity, 0, Infinity),
+  );
 
   const ranges = [];
   const wordPattern = /[\p{L}\p{N}_$]+/gu;
   const lines = String(text).split(/\r\n|\r|\n/);
   let eligibleWordIndex = 0;
 
-  for (let line = 0; line < lines.length; line += 1) {
+  for (let line = 0; line < lines.length && line <= endLine; line += 1) {
     const sourceLine = lines[line];
     wordPattern.lastIndex = 0;
     let match;
@@ -32,7 +37,7 @@ function getEmphasisRanges(text, options = {}) {
 
       const shouldEmphasize = eligibleWordIndex % (saccades + 1) === 0;
       eligibleWordIndex += 1;
-      if (!shouldEmphasize) continue;
+      if (!shouldEmphasize || line < startLine) continue;
 
       const count = Math.max(
         1,
