@@ -2,6 +2,7 @@ const mockState = {
   values: {},
   inspect: {},
   commands: {},
+  documentChangeHandler: null,
   update: jest.fn(() => Promise.resolve()),
 };
 
@@ -10,8 +11,18 @@ jest.mock(
   () => ({
     ConfigurationTarget: { Global: 1, Workspace: 2 },
     DecorationRangeBehavior: { ClosedClosed: 1 },
-    Range: class {},
-    Position: class {},
+    Range: class {
+      constructor(start, end) {
+        this.start = start;
+        this.end = end;
+      }
+    },
+    Position: class {
+      constructor(line, character) {
+        this.line = line;
+        this.character = character;
+      }
+    },
     commands: {
       registerCommand: (name, handler) => {
         mockState.commands[name] = handler;
@@ -24,6 +35,7 @@ jest.mock(
       createTextEditorDecorationType: () => ({ dispose() {} }),
       onDidChangeActiveTextEditor: () => ({ dispose() {} }),
       onDidChangeVisibleTextEditors: () => ({ dispose() {} }),
+      onDidChangeTextEditorVisibleRanges: () => ({ dispose() {} }),
     },
     workspace: {
       getConfiguration: () => ({
@@ -32,7 +44,10 @@ jest.mock(
         inspect: (key) => mockState.inspect[key],
         update: mockState.update,
       }),
-      onDidChangeTextDocument: () => ({ dispose() {} }),
+      onDidChangeTextDocument: (handler) => {
+        mockState.documentChangeHandler = handler;
+        return { dispose() {} };
+      },
       onDidChangeConfiguration: () => ({ dispose() {} }),
     },
   }),
@@ -150,5 +165,112 @@ describe("awaited setting updates", () => {
     await run("bionicCodeReader.increaseSaccades");
 
     expect(mockState.values.saccades).toBe(2);
+  });
+});
+
+describe("render window", () => {
+  const vscode = require("vscode");
+  const makeEditor = (visibleRanges) => ({
+    visibleRanges,
+    document: {
+      languageId: "javascript",
+      fileName: "big.js",
+      lineCount: 1000,
+      version: 1,
+      lineAt: jest.fn(() => ({ text: "alpha beta" })),
+    },
+    setDecorations: jest.fn(),
+  });
+  const range = (start, end) => ({
+    start: { line: start },
+    end: { line: end },
+  });
+  const decoratedLines = async (editor) => {
+    vscode.window.visibleTextEditors = [editor];
+    await run("bionicCodeReader.toggle");
+    return editor.setDecorations.mock.calls.at(-1)[1].map((r) => r.start.line);
+  };
+
+  afterEach(() => {
+    vscode.window.visibleTextEditors = [];
+  });
+
+  test("decorates only the viewport plus a margin", async () => {
+    const lines = await decoratedLines(makeEditor([range(500, 540)]));
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([400, 640]);
+  });
+
+  test("leaves large folded gaps between visible ranges undecorated", async () => {
+    const editor = makeEditor([range(300, 310), range(700, 710)]);
+    const visited = [];
+    editor.document.lineAt = jest.fn((line) => {
+      visited.push(line);
+      return { text: "alpha beta" };
+    });
+
+    const lines = await decoratedLines(editor);
+
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([200, 810]);
+    expect(lines).not.toContain(500);
+    expect(lines).toHaveLength(844);
+    expect(visited).toHaveLength(422);
+    expect(visited).not.toContain(500);
+  });
+
+  test("falls back to the top of the file when there are no visible ranges", async () => {
+    const lines = await decoratedLines(makeEditor([]));
+    expect([Math.min(...lines), Math.max(...lines)]).toEqual([0, 200]);
+  });
+
+  test("reads only requested lines and caches the saccade prefix", async () => {
+    mockState.values.saccades = 1;
+    const editor = makeEditor([range(500, 500)]);
+    const firstLineAt = editor.document.lineAt;
+    const visited = [];
+    editor.document.lineAt = jest.fn((line) => {
+      visited.push(line);
+      return firstLineAt();
+    });
+
+    vscode.window.visibleTextEditors = [editor];
+    await run("bionicCodeReader.toggle");
+    const firstPassCount = visited.length;
+    visited.length = 0;
+    await run("bionicCodeReader.toggle");
+
+    expect(visited).toEqual(
+      Array.from({ length: 201 }, (_, index) => index + 400),
+    );
+    expect(firstPassCount).toBe(601);
+  });
+
+  test("reuses unaffected prefix counts after an edit", async () => {
+    jest.useFakeTimers();
+    try {
+      mockState.values.saccades = 1;
+      const editor = makeEditor([range(500, 500)]);
+      const visited = [];
+      editor.document.lineAt = jest.fn((line) => {
+        visited.push(line);
+        return { text: "alpha beta" };
+      });
+      vscode.window.visibleTextEditors = [editor];
+      await run("bionicCodeReader.toggle");
+
+      visited.length = 0;
+      editor.document.version += 1;
+      mockState.documentChangeHandler({
+        document: editor.document,
+        contentChanges: [{ range: { start: { line: 450 } } }],
+      });
+      await run("bionicCodeReader.toggle");
+
+      expect(visited).toEqual(
+        Array.from({ length: 201 }, (_, index) => index + 400),
+      );
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
   });
 });

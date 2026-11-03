@@ -8,6 +8,7 @@ A lightweight VS Code extension that applies Bionic-style emphasis as editor dec
 - Minimum word length, so short words can be ignored.
 - New commands to increase/decrease minimum word length and saccades (0–10), alongside the existing saccades toggle.
 - Commands write to workspace settings when the workspace already overrides that setting, and to user settings otherwise.
+- Only the visible lines plus a margin of 100 lines above and below are decorated, so large files stay responsive.
 - Reading algorithm extracted into a pure module.
 - Jest unit tests cover the reading algorithm and the extension commands; no runtime dependencies.
 - `npm run package` builds a `.vsix` using the locally installed `@vscode/vsce`.

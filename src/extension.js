@@ -1,8 +1,12 @@
 const vscode = require("vscode");
-const { getEmphasisRanges } = require("./reading-engine");
+const {
+  countEligibleWords,
+  getEmphasisRangesForLines,
+} = require("./reading-engine");
 
 let decoration;
 let timer;
+let eligibleWordPrefixCache = new WeakMap();
 
 function getConfig() {
   return vscode.workspace.getConfiguration("bionicCodeReader");
@@ -25,23 +29,128 @@ function createDecoration() {
   });
 }
 
-function getRanges(document) {
+const windowMargin = 100;
+
+function getRenderWindows(editor) {
+  const { visibleRanges } = editor;
+  const lastDocumentLine = Math.max(0, editor.document.lineCount - 1);
+  if (visibleRanges.length === 0) {
+    return [{ startLine: 0, endLine: Math.min(lastDocumentLine, windowMargin * 2) }];
+  }
+
+  const windows = visibleRanges
+    .map((range) => ({
+      startLine: Math.max(0, range.start.line - windowMargin),
+      endLine: Math.min(lastDocumentLine, range.end.line + windowMargin),
+    }))
+    .sort((a, b) => a.startLine - b.startLine);
+  const merged = [];
+
+  for (const window of windows) {
+    const previous = merged.at(-1);
+    if (previous && window.startLine <= previous.endLine) {
+      previous.endLine = Math.max(previous.endLine, window.endLine);
+    } else {
+      merged.push(window);
+    }
+  }
+
+  return merged;
+}
+
+function getEligibleWordPrefix(document, endLine, minimumWordLength) {
+  let cache = eligibleWordPrefixCache.get(document);
+  if (
+    !cache ||
+    cache.version !== document.version ||
+    cache.minimumWordLength !== minimumWordLength
+  ) {
+    cache = {
+      version: document.version,
+      minimumWordLength,
+      eligibleWordPrefixCounts: [0],
+    };
+    eligibleWordPrefixCache.set(document, cache);
+  }
+
+  while (cache.eligibleWordPrefixCounts.length <= endLine) {
+    const line = cache.eligibleWordPrefixCounts.length - 1;
+    cache.eligibleWordPrefixCounts.push(
+      cache.eligibleWordPrefixCounts[line] +
+        countEligibleWords(document.lineAt(line).text, minimumWordLength),
+    );
+  }
+
+  return cache.eligibleWordPrefixCounts[endLine];
+}
+
+function invalidateEligibleWordPrefix(event) {
+  const cache = eligibleWordPrefixCache.get(event.document);
+  if (!cache) return;
+
+  const firstChangedLine = event.contentChanges.reduce(
+    (line, change) => Math.min(line, change.range.start.line),
+    Infinity,
+  );
+  if (Number.isFinite(firstChangedLine)) {
+    cache.eligibleWordPrefixCounts.length = Math.min(
+      cache.eligibleWordPrefixCounts.length,
+      firstChangedLine + 1,
+    );
+  } else {
+    cache.eligibleWordPrefixCounts.length = 1;
+  }
+  cache.version = event.document.version;
+}
+
+function getRanges(document, windows) {
   const config = getConfig();
   const excluded = config.get("excludedLanguages", ["log"]);
   if (excluded.includes(document.languageId)) return [];
 
-  const text = document.getText();
-  return getEmphasisRanges(text, {
-    fixationStrength: config.get("fixationStrength", 0.35),
-    saccades: config.get("saccades", 0),
-    minimumWordLength: config.get("minimumWordLength", 1),
-  }).map(
-    (item) =>
-      new vscode.Range(
-        new vscode.Position(item.line, item.start),
-        new vscode.Position(item.line, item.end),
-      ),
-  );
+  const fixationStrength = config.get("fixationStrength", 0.35);
+  const saccades = config.get("saccades", 0);
+  const minimumWordLength = config.get("minimumWordLength", 1);
+  const ranges = [];
+
+  for (const { startLine, endLine } of windows) {
+    const eligibleWordOffset =
+      saccades === 0
+        ? 0
+        : getEligibleWordPrefix(document, startLine, minimumWordLength);
+    const lines = [];
+    for (let line = startLine; line <= endLine; line += 1) {
+      lines.push({ line, text: document.lineAt(line).text });
+    }
+
+    if (saccades !== 0) {
+      const cache = eligibleWordPrefixCache.get(document);
+      for (const { line, text } of lines) {
+        if (cache.eligibleWordPrefixCounts.length === line + 1) {
+          cache.eligibleWordPrefixCounts.push(
+            cache.eligibleWordPrefixCounts[line] +
+              countEligibleWords(text, minimumWordLength),
+          );
+        }
+      }
+    }
+
+    for (const item of getEmphasisRangesForLines(lines, {
+      fixationStrength,
+      saccades,
+      minimumWordLength,
+      eligibleWordOffset,
+    })) {
+      ranges.push(
+        new vscode.Range(
+          new vscode.Position(item.line, item.start),
+          new vscode.Position(item.line, item.end),
+        ),
+      );
+    }
+  }
+
+  return ranges;
 }
 
 function refreshEditor(editor) {
@@ -49,7 +158,7 @@ function refreshEditor(editor) {
   const isEnabled = getConfig().get("enabled", true);
   editor.setDecorations(
     decoration,
-    isEnabled ? getRanges(editor.document) : [],
+    isEnabled ? getRanges(editor.document, getRenderWindows(editor)) : [],
   );
 }
 
@@ -150,7 +259,9 @@ function activate(context) {
     }),
     vscode.window.onDidChangeActiveTextEditor(refreshEditor),
     vscode.window.onDidChangeVisibleTextEditors(refreshVisibleEditors),
+    vscode.window.onDidChangeTextEditorVisibleRanges(scheduleRefresh),
     vscode.workspace.onDidChangeTextDocument((event) => {
+      invalidateEligibleWordPrefix(event);
       if (
         vscode.window.visibleTextEditors.some(
           (editor) => editor.document === event.document,
