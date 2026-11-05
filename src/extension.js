@@ -232,7 +232,7 @@ async function toggleSaccades() {
 async function adjustDelay(integer) {
   const config = getConfig();
   const current = config.get("updateDelay", 120);
-  const next = Math.max(0, current + integer);
+  const next = Math.max(0, Math.min(1000, current + integer));
   await updateSetting("updateDelay", next);
   vscode.window.setStatusBarMessage(`Bionic update delay: ${next} ms`, 2500);
 }
