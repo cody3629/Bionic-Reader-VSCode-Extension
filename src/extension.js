@@ -185,15 +185,15 @@ async function setEnabled(value) {
   );
 }
 
-function adjustStrength(delta) {
+async function adjustStrength(delta) {
   const config = getConfig();
   const current = config.get("fixationStrength", 0.35);
   const next = Math.max(
     0.1,
     Math.min(1, Math.round((current + delta) * 100) / 100),
   );
-  updateSetting("fixationStrength", next);
-  scheduleRefresh();
+  await updateSetting("fixationStrength", next);
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(
     `Bionic fixation strength: ${Math.round(next * 100)}%`,
     2500,
@@ -205,7 +205,7 @@ async function adjustMinimumWordLength(integer) {
   const current = config.get("minimumWordLength", 1);
   const next = Math.max(1, Math.min(20, current + integer));
   await updateSetting("minimumWordLength", next);
-  scheduleRefresh();
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(
     `Bionic minimum word length: ${next}`,
     2500,
@@ -216,17 +216,25 @@ async function adjustSaccades(delta) {
   const config = getConfig();
   const next = Math.max(0, Math.min(10, config.get("saccades", 0) + delta));
   await updateSetting("saccades", next);
-  scheduleRefresh();
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(`Bionic saccades: ${next}`, 2500);
 }
 
-function toggleSaccades() {
+async function toggleSaccades() {
   const config = getConfig();
   const current = config.get("saccades", 0);
   const next = current === 0 ? 1 : 0;
-  updateSetting("saccades", next);
-  scheduleRefresh();
+  await updateSetting("saccades", next);
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(`Bionic saccades: ${next}`, 2500);
+}
+
+async function adjustDelay(integer) {
+  const config = getConfig();
+  const current = config.get("updateDelay", 120);
+  const next = Math.max(0, current + integer);
+  await updateSetting("updateDelay", next);
+  vscode.window.setStatusBarMessage(`Bionic update delay: ${next} ms`, 2500);
 }
 
 function activate(context) {
@@ -278,10 +286,13 @@ function activate(context) {
         scheduleRefresh();
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("bionicCodeReader")) {
+      if (!event.affectsConfiguration("bionicCodeReader")) return;
+
+      if (event.affectsConfiguration("bionicCodeReader.fontWeight")) {
         createDecoration();
-        refreshVisibleEditors();
       }
+
+      refreshVisibleEditors();
     }),
   );
 

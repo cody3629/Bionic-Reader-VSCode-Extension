@@ -210,6 +210,38 @@ describe("awaited setting updates", () => {
 
     expect(mockState.values.saccades).toBe(2);
   });
+
+  test("update-delay commands apply sequential increments", async () => {
+    mockState.update
+      .mockImplementationOnce(delayedUpdate)
+      .mockImplementationOnce(delayedUpdate);
+
+    await run("bionicCodeReader.increaseDelay");
+    await run("bionicCodeReader.increaseDelay");
+
+    expect(mockState.values.updateDelay).toBe(140);
+  });
+
+  test("emphasis adjustments refresh immediately; delay adjustments do not refresh", async () => {
+    jest.useFakeTimers();
+    try {
+      const vscode = require("vscode");
+      const editor = makeTestEditor("javascript", [
+        { start: { line: 0 }, end: { line: 0 } },
+      ]);
+      vscode.window.visibleTextEditors = [editor];
+
+      await run("bionicCodeReader.increaseStrength");
+      expect(editor.setDecorations).toHaveBeenCalledTimes(1);
+
+      editor.setDecorations.mockClear();
+      await run("bionicCodeReader.increaseDelay");
+      expect(editor.setDecorations).not.toHaveBeenCalled();
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  });
 });
 
 describe("render window", () => {
@@ -329,7 +361,9 @@ describe("render window", () => {
 
     mockState.values.fontWeight = "900";
     mockState.configurationChangeHandler({
-      affectsConfiguration: (section) => section === "bionicCodeReader",
+      affectsConfiguration: (section) =>
+        section === "bionicCodeReader" ||
+        section === "bionicCodeReader.fontWeight",
     });
 
     const newDecoration = editor.setDecorations.mock.calls.at(-1)[0];
