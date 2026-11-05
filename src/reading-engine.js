@@ -8,18 +8,18 @@
  * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number }} options
  * @returns {Array<{ line: number, start: number, end: number, word: string }>}
  */
+/**
+ * @param {Array<{ line: number, text: string }>} lines
+ * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number, eligibleWordOffset?: number }} options
+ * @returns {Array<{ line: number, start: number, end: number, word: string }>}
+ */
 function getEmphasisRanges(text, options = {}) {
   const lines = String(text)
     .split(/\r\n|\r|\n/)
     .map((lineText, line) => ({ line, text: lineText }));
   return getEmphasisRangesForLines(lines, options);
 }
-
-/**
- * @param {Array<{ line: number, text: string }>} lines
- * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number, eligibleWordOffset?: number }} options
- * @returns {Array<{ line: number, start: number, end: number, word: string }>}
- */
+//TODO: Figure out why extension isn't working on source control view
 function getEmphasisRangesForLines(lines, options = {}) {
   const strength = clampNumber(options.fixationStrength, 0.35, 0.1, 1);
   const saccades = Math.floor(clampNumber(options.saccades, 0, 0, 10));
@@ -70,7 +70,7 @@ function countEligibleWords(text, minimumWordLength = 1) {
 
 // Words shorter than the minimum are skipped and do not count toward saccades.
 function* findEligibleWords(text, minimumWordLength) {
-  const wordPattern = /[\p{L}\p{N}_$]+/gu;
+  const wordPattern = /[\p{L}\p{N}_$][\p{L}\p{N}\p{M}_$]*/gu;
   let match;
 
   while ((match = wordPattern.exec(text)) !== null) {

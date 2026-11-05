@@ -3,7 +3,7 @@
   "displayName": "Bionic Code Reader",
   "description": "Configurable Bionic-style emphasis for source code, with an independently testable reading algorithm.",
   "version": "0.2.0",
-  "publisher": "local-experiment",
+  "publisher": "cody-webb",
   "repository": {
     "type": "git",
     "url": "https://github.com/cody3629/Bionic-Reader-VSCode-Extension"

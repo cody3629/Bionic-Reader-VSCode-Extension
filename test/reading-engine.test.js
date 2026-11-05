@@ -146,3 +146,36 @@ test("processes selected lines using the eligible-word offset from prior lines",
 test("counts eligible words using the configured minimum length", () => {
   expect(countEligibleWords("a café 𐐀𐐁b", 2)).toBe(2);
 });
+
+test("handles decomposed characters correctly", () => {
+  const result = getEmphasisRanges("e\u0301 e\u0301e\u0301", {
+    minimumWordLength: 2,
+  });
+  expect(words(result)).toEqual(["e\u0301", "e\u0301e\u0301"]);
+});
+
+test("handles accented characters correctly", () => {
+  const result = getEmphasisRanges("é éé", { minimumWordLength: 2 });
+  expect(words(result)).toEqual(["éé"]);
+});
+
+test("eligible word offset preserves the global saccade phase", () => {
+  const result = getEmphasisRangesForLines(
+    [{ line: 10, text: "seven eight nine ten" }],
+    { saccades: 2, eligibleWordOffset: 4 },
+  );
+
+  expect(words(result)).toEqual(["nine"]);
+});
+
+test("continues eligible-word counting across supplied lines", () => {
+  const result = getEmphasisRangesForLines(
+    [
+      { line: 2, text: "five six" },
+      { line: 8, text: "nine ten" },
+    ],
+    { saccades: 2, eligibleWordOffset: 4 },
+  );
+
+  expect(result.map(({ line, word }) => [line, word])).toEqual([[8, "nine"]]);
+});
