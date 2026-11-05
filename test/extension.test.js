@@ -373,6 +373,23 @@ describe("render window", () => {
     expect(newDecoration.options.fontWeight).toBe("900");
   });
 
+  test("does not refresh or recreate decorations for update-delay-only changes", () => {
+    const editor = makeEditor([range(100, 110)]);
+    vscode.window.visibleTextEditors = [editor];
+    mockState.activeEditorChangeHandler(editor);
+    const decorationCount = mockState.decorationTypes.length;
+    editor.setDecorations.mockClear();
+
+    mockState.configurationChangeHandler({
+      affectsConfiguration: (section) =>
+        section === "bionicCodeReader" ||
+        section === "bionicCodeReader.updateDelay",
+    });
+
+    expect(editor.setDecorations).not.toHaveBeenCalled();
+    expect(mockState.decorationTypes).toHaveLength(decorationCount);
+  });
+
   test("reads only requested lines and caches the saccade prefix", async () => {
     mockState.values.saccades = 1;
     const editor = makeEditor([range(500, 500)]);

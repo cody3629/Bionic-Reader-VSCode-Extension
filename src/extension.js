@@ -286,7 +286,21 @@ function activate(context) {
         scheduleRefresh();
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (!event.affectsConfiguration("bionicCodeReader")) return;
+      const renderingSettings = [
+        "enabled",
+        "fixationStrength",
+        "saccades",
+        "minimumWordLength",
+        "fontWeight",
+        "excludedLanguages",
+      ];
+      if (
+        !renderingSettings.some((key) =>
+          event.affectsConfiguration(`bionicCodeReader.${key}`),
+        )
+      ) {
+        return;
+      }
 
       if (event.affectsConfiguration("bionicCodeReader.fontWeight")) {
         createDecoration();
