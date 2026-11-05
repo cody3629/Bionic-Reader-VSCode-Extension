@@ -112,24 +112,20 @@ test("a lone carriage return starts a new line", () => {
   ]);
 });
 
-test("a line window returns the same ranges as the full result for those lines", () => {
-  const text = Array.from({ length: 20 }, () => "a bb ccc dddd").join("\n");
+test("selected lines with a prior word count match the full result for those lines", () => {
+  const lines = Array.from({ length: 20 }, () => "a bb ccc dddd");
   const options = { saccades: 2 };
-  const full = getEmphasisRanges(text, options);
-  const windowed = getEmphasisRanges(text, {
-    ...options,
-    startLine: 5,
-    endLine: 9,
-  });
+  const full = getEmphasisRanges(lines.join("\n"), options);
+  const eligibleWordOffset = lines
+    .slice(0, 5)
+    .reduce((sum, text) => sum + countEligibleWords(text), 0);
+  const windowed = getEmphasisRangesForLines(
+    lines.slice(5, 10).map((text, index) => ({ line: 5 + index, text })),
+    { ...options, eligibleWordOffset },
+  );
 
   expect(windowed.length).toBeGreaterThan(0);
   expect(windowed).toEqual(full.filter((r) => r.line >= 5 && r.line <= 9));
-});
-
-test("invalid line window values are ignored", () => {
-  const text = "one\ntwo\nthree";
-  const full = getEmphasisRanges(text);
-  expect(getEmphasisRanges(text, { startLine: "x", endLine: NaN })).toEqual(full);
 });
 
 test("processes selected lines using the eligible-word offset from prior lines", () => {
@@ -149,4 +145,37 @@ test("processes selected lines using the eligible-word offset from prior lines",
 
 test("counts eligible words using the configured minimum length", () => {
   expect(countEligibleWords("a café 𐐀𐐁b", 2)).toBe(2);
+});
+
+test("handles decomposed characters correctly", () => {
+  const result = getEmphasisRanges("e\u0301 e\u0301e\u0301", {
+    minimumWordLength: 2,
+  });
+  expect(words(result)).toEqual(["e\u0301", "e\u0301e\u0301"]);
+});
+
+test("handles accented characters correctly", () => {
+  const result = getEmphasisRanges("é éé", { minimumWordLength: 2 });
+  expect(words(result)).toEqual(["éé"]);
+});
+
+test("eligible word offset preserves the global saccade phase", () => {
+  const result = getEmphasisRangesForLines(
+    [{ line: 10, text: "seven eight nine ten" }],
+    { saccades: 2, eligibleWordOffset: 4 },
+  );
+
+  expect(words(result)).toEqual(["nine"]);
+});
+
+test("continues eligible-word counting across supplied lines", () => {
+  const result = getEmphasisRangesForLines(
+    [
+      { line: 2, text: "five six" },
+      { line: 8, text: "nine ten" },
+    ],
+    { saccades: 2, eligibleWordOffset: 4 },
+  );
+
+  expect(result.map(({ line, word }) => [line, word])).toEqual([[8, "nine"]]);
 });

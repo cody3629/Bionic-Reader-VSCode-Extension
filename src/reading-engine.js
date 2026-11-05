@@ -5,84 +5,37 @@
 
 /**
  * @param {string} text
- * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number, startLine?: number, endLine?: number }} options
- * startLine/endLine (0-based, inclusive) limit which lines produce ranges; saccade counting still starts at line 0.
+ * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number }} options
  * @returns {Array<{ line: number, start: number, end: number, word: string }>}
  */
-function getEmphasisRanges(text, options = {}) {
-  const strength = clampNumber(options.fixationStrength, 0.35, 0.1, 1);
-  const saccades = Math.floor(clampNumber(options.saccades, 0, 0, 10));
-  const minimumWordLength = Math.floor(
-    clampNumber(options.minimumWordLength, 1, 1, 20),
-  );
-  const startLine = Math.floor(clampNumber(options.startLine, 0, 0, Infinity));
-  const endLine = Math.floor(
-    clampNumber(options.endLine, Infinity, 0, Infinity),
-  );
-
-  const ranges = [];
-  const wordPattern = /[\p{L}\p{N}_$]+/gu;
-  const lines = String(text).split(/\r\n|\r|\n/);
-  let eligibleWordIndex = 0;
-
-  for (let line = 0; line < lines.length && line <= endLine; line += 1) {
-    const sourceLine = lines[line];
-    wordPattern.lastIndex = 0;
-    let match;
-
-    while ((match = wordPattern.exec(sourceLine)) !== null) {
-      const word = match[0];
-      const codePoints = [...word];
-      if (codePoints.length < minimumWordLength) continue;
-
-      const shouldEmphasize = eligibleWordIndex % (saccades + 1) === 0;
-      eligibleWordIndex += 1;
-      if (!shouldEmphasize || line < startLine) continue;
-
-      const count = Math.max(
-        1,
-        Math.min(codePoints.length, Math.ceil(codePoints.length * strength)),
-      );
-      const emphasizedPrefix = codePoints.slice(0, count).join("");
-      ranges.push({
-        line,
-        start: match.index,
-        end: match.index + emphasizedPrefix.length,
-        word,
-      });
-    }
-  }
-
-  return ranges;
-}
-
 /**
  * @param {Array<{ line: number, text: string }>} lines
  * @param {{ fixationStrength?: number, saccades?: number, minimumWordLength?: number, eligibleWordOffset?: number }} options
  * @returns {Array<{ line: number, start: number, end: number, word: string }>}
  */
+function getEmphasisRanges(text, options = {}) {
+  const lines = String(text)
+    .split(/\r\n|\r|\n/)
+    .map((lineText, line) => ({ line, text: lineText }));
+  return getEmphasisRangesForLines(lines, options);
+}
+//TODO: Figure out why extension isn't working on source control view
 function getEmphasisRangesForLines(lines, options = {}) {
   const strength = clampNumber(options.fixationStrength, 0.35, 0.1, 1);
   const saccades = Math.floor(clampNumber(options.saccades, 0, 0, 10));
-  const minimumWordLength = Math.floor(
-    clampNumber(options.minimumWordLength, 1, 1, 20),
+  const minimumWordLength = normalizeMinimumWordLength(
+    options.minimumWordLength,
   );
-  let eligibleWordIndex = Math.max(
-    0,
-    Math.floor(clampNumber(options.eligibleWordOffset, 0, 0, Infinity)),
+  let eligibleWordIndex = Math.floor(
+    clampNumber(options.eligibleWordOffset, 0, 0, Infinity),
   );
   const ranges = [];
-  const wordPattern = /[\p{L}\p{N}_$]+/gu;
 
   for (const { line, text } of lines) {
-    wordPattern.lastIndex = 0;
-    let match;
-
-    while ((match = wordPattern.exec(text)) !== null) {
-      const word = match[0];
-      const codePoints = [...word];
-      if (codePoints.length < minimumWordLength) continue;
-
+    for (const { match, codePoints } of findEligibleWords(
+      text,
+      minimumWordLength,
+    )) {
       const shouldEmphasize = eligibleWordIndex % (saccades + 1) === 0;
       eligibleWordIndex += 1;
       if (!shouldEmphasize) continue;
@@ -96,7 +49,7 @@ function getEmphasisRangesForLines(lines, options = {}) {
         line,
         start: match.index,
         end: match.index + emphasizedPrefix.length,
-        word,
+        word: match[0],
       });
     }
   }
@@ -105,18 +58,29 @@ function getEmphasisRangesForLines(lines, options = {}) {
 }
 
 function countEligibleWords(text, minimumWordLength = 1) {
-  const minimumLength = Math.floor(
-    clampNumber(minimumWordLength, 1, 1, 20),
-  );
-  const wordPattern = /[\p{L}\p{N}_$]+/gu;
   let count = 0;
+  for (const _word of findEligibleWords(
+    text,
+    normalizeMinimumWordLength(minimumWordLength),
+  )) {
+    count += 1;
+  }
+  return count;
+}
+
+// Words shorter than the minimum are skipped and do not count toward saccades.
+function* findEligibleWords(text, minimumWordLength) {
+  const wordPattern = /[\p{L}\p{N}_$][\p{L}\p{N}\p{M}_$]*/gu;
   let match;
 
   while ((match = wordPattern.exec(text)) !== null) {
-    if ([...match[0]].length >= minimumLength) count += 1;
+    const codePoints = [...match[0]];
+    if (codePoints.length >= minimumWordLength) yield { match, codePoints };
   }
+}
 
-  return count;
+function normalizeMinimumWordLength(value) {
+  return Math.floor(clampNumber(value, 1, 1, 20));
 }
 
 function clampNumber(value, fallback, minimum, maximum) {

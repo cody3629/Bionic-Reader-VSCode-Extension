@@ -24,7 +24,7 @@ function updateSetting(key, value) {
 function createDecoration() {
   if (decoration) decoration.dispose();
   decoration = vscode.window.createTextEditorDecorationType({
-    fontWeight: getConfig().get("fontWeight", "700"),
+    fontWeight: getConfig().get("fontWeight", "600"),
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
   });
 }
@@ -35,7 +35,9 @@ function getRenderWindows(editor) {
   const { visibleRanges } = editor;
   const lastDocumentLine = Math.max(0, editor.document.lineCount - 1);
   if (visibleRanges.length === 0) {
-    return [{ startLine: 0, endLine: Math.min(lastDocumentLine, windowMargin * 2) }];
+    return [
+      { startLine: 0, endLine: Math.min(lastDocumentLine, windowMargin * 2) },
+    ];
   }
 
   const windows = visibleRanges
@@ -183,15 +185,15 @@ async function setEnabled(value) {
   );
 }
 
-function adjustStrength(delta) {
+async function adjustStrength(delta) {
   const config = getConfig();
   const current = config.get("fixationStrength", 0.35);
   const next = Math.max(
     0.1,
     Math.min(1, Math.round((current + delta) * 100) / 100),
   );
-  updateSetting("fixationStrength", next);
-  scheduleRefresh();
+  await updateSetting("fixationStrength", next);
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(
     `Bionic fixation strength: ${Math.round(next * 100)}%`,
     2500,
@@ -203,7 +205,7 @@ async function adjustMinimumWordLength(integer) {
   const current = config.get("minimumWordLength", 1);
   const next = Math.max(1, Math.min(20, current + integer));
   await updateSetting("minimumWordLength", next);
-  scheduleRefresh();
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(
     `Bionic minimum word length: ${next}`,
     2500,
@@ -214,17 +216,25 @@ async function adjustSaccades(delta) {
   const config = getConfig();
   const next = Math.max(0, Math.min(10, config.get("saccades", 0) + delta));
   await updateSetting("saccades", next);
-  scheduleRefresh();
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(`Bionic saccades: ${next}`, 2500);
 }
 
-function toggleSaccades() {
+async function toggleSaccades() {
   const config = getConfig();
   const current = config.get("saccades", 0);
   const next = current === 0 ? 1 : 0;
-  updateSetting("saccades", next);
-  scheduleRefresh();
+  await updateSetting("saccades", next);
+  refreshVisibleEditors();
   vscode.window.setStatusBarMessage(`Bionic saccades: ${next}`, 2500);
+}
+
+async function adjustDelay(integer) {
+  const config = getConfig();
+  const current = config.get("updateDelay", 120);
+  const next = Math.max(0, Math.min(1000, current + integer));
+  await updateSetting("updateDelay", next);
+  vscode.window.setStatusBarMessage(`Bionic update delay: ${next} ms`, 2500);
 }
 
 function activate(context) {
@@ -257,6 +267,12 @@ function activate(context) {
     vscode.commands.registerCommand("bionicCodeReader.toggleSaccades", () => {
       toggleSaccades();
     }),
+    vscode.commands.registerCommand("bionicCodeReader.increaseDelay", () =>
+      adjustDelay(10),
+    ),
+    vscode.commands.registerCommand("bionicCodeReader.decreaseDelay", () =>
+      adjustDelay(-10),
+    ),
     vscode.window.onDidChangeActiveTextEditor(refreshEditor),
     vscode.window.onDidChangeVisibleTextEditors(refreshVisibleEditors),
     vscode.window.onDidChangeTextEditorVisibleRanges(scheduleRefresh),
@@ -270,10 +286,27 @@ function activate(context) {
         scheduleRefresh();
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("bionicCodeReader")) {
-        createDecoration();
-        refreshVisibleEditors();
+      const renderingSettings = [
+        "enabled",
+        "fixationStrength",
+        "saccades",
+        "minimumWordLength",
+        "fontWeight",
+        "excludedLanguages",
+      ];
+      if (
+        !renderingSettings.some((key) =>
+          event.affectsConfiguration(`bionicCodeReader.${key}`),
+        )
+      ) {
+        return;
       }
+
+      if (event.affectsConfiguration("bionicCodeReader.fontWeight")) {
+        createDecoration();
+      }
+
+      refreshVisibleEditors();
     }),
   );
 

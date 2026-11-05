@@ -3,7 +3,7 @@
   "displayName": "Bionic Code Reader",
   "description": "Configurable Bionic-style emphasis for source code, with an independently testable reading algorithm.",
   "version": "0.2.0",
-  "publisher": "local-experiment",
+  "publisher": "cody-webb",
   "repository": {
     "type": "git",
     "url": "https://github.com/cody3629/Bionic-Reader-VSCode-Extension"
@@ -23,35 +23,43 @@
     "commands": [
       {
         "command": "bionicCodeReader.toggle",
-        "title": "Bionic Code Reader: Toggle"
+        "title": "Bionic Code Reader: Toggle On/Off"
       },
       {
         "command": "bionicCodeReader.increaseStrength",
-        "title": "Bionic Code Reader: Increase Fixation Strength"
+        "title": "Bionic Code Reader: Increase Fixation Strength (5%)"
       },
       {
         "command": "bionicCodeReader.decreaseStrength",
-        "title": "Bionic Code Reader: Decrease Fixation Strength"
+        "title": "Bionic Code Reader: Decrease Fixation Strength (5%)"
       },
       {
         "command": "bionicCodeReader.increaseMinimumWordLength",
-        "title": "Bionic Code Reader: Increase Minimum Word Length"
+        "title": "Bionic Code Reader: Increase Minimum Word Length (+1)"
       },
       {
         "command": "bionicCodeReader.decreaseMinimumWordLength",
-        "title": "Bionic Code Reader: Decrease Minimum Word Length"
+        "title": "Bionic Code Reader: Decrease Minimum Word Length (-1)"
       },
       {
         "command": "bionicCodeReader.increaseSaccades",
-        "title": "Bionic Code Reader: Increase Saccades"
+        "title": "Bionic Code Reader: Increase Saccades (+1)"
       },
       {
         "command": "bionicCodeReader.decreaseSaccades",
-        "title": "Bionic Code Reader: Decrease Saccades"
+        "title": "Bionic Code Reader: Decrease Saccades (-1)"
       },
       {
         "command": "bionicCodeReader.toggleSaccades",
-        "title": "Bionic Code Reader: Toggle Saccades"
+        "title": "Bionic Code Reader: Toggle Saccades (0/1)"
+      },
+      {
+        "command": "bionicCodeReader.increaseDelay",
+        "title": "Bionic Code Reader: Increase Update Delay (+10ms)"
+      },
+      {
+        "command": "bionicCodeReader.decreaseDelay",
+        "title": "Bionic Code Reader: Decrease Update Delay (-10ms)"
       }
     ],
     "keybindings": [
@@ -92,7 +100,7 @@
         },
         "bionicCodeReader.fontWeight": {
           "type": "string",
-          "default": "700",
+          "default": "600",
           "enum": [
             "400",
             "500",
