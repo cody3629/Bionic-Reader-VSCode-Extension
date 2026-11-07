@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish extension
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json ($PACKAGE_VERSION)"
+            exit 1
+          fi
+
+      - name: Check JavaScript syntax
+        run: npm run check
+
+      - name: Run Jest tests
+        run: npm test
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Locate VSIX package
+        id: vsix
+        shell: bash
+        run: |
+          VSIX="$(find . -maxdepth 1 -type f -name '*.vsix' -print -quit)"
+
+          if [ -z "$VSIX" ]; then
+            echo "No VSIX package was generated."
+            exit 1
+          fi
+
+          echo "path=$VSIX" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Visual Studio Marketplace
+        run: npx @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.path }}" --oidc
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "${{ steps.vsix.outputs.path }}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes
