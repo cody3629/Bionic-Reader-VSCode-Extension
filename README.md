@@ -1,5 +1,9 @@
 # Bionic Code Reader 0.2.0
 
+# Bionic Code Reader
+
+[![CI](https://github.com/cody3629/Bionic-Reader-VSCode-Extension/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cody3629/Bionic-Reader-VSCode-Extension/actions/workflows/ci.yml)
+
 A lightweight VS Code extension that applies Bionic-style emphasis as editor decorations. It does not rewrite source files, change clipboard contents, or modify your editor's base font weight.
 
 ## What's new in 0.2.0
