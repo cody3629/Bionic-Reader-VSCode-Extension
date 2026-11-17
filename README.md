@@ -7,7 +7,7 @@ A lightweight VS Code extension that applies Bionic-style emphasis as editor dec
 
 ## Bionic Code Reader in Action
 
-![Code example demonstrating bionic reading on code](<Bionic code example.png>)
+![Code example demonstrating bionic reading on code](<images\Bionic code example.png>)
 
 ## What is Bionic Reading?
 
