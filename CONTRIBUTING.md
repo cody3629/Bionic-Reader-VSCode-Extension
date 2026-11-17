@@ -5,10 +5,20 @@ the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Issues and triage
 
-Search existing issues before opening a bug report or feature request. Use the
-appropriate issue template and provide enough detail to reproduce a bug or
-understand the proposed change. Report security vulnerabilities privately as
-described in [SECURITY.md](SECURITY.md), not in public issues.
+Search [existing issues](https://github.com/cody3629/Bionic-Reader-VSCode-Extension/issues)
+before opening a report. To submit one, go to **Issues**, select **New issue**,
+and choose the appropriate form:
+
+- **Bug report:** Describe what happened and what you expected, provide
+  reproduction steps, and include the extension, VS Code, and OS versions.
+- **Feature request:** Describe the problem and your proposed solution; add
+  alternatives or other context if useful.
+
+Complete the required fields and submit the issue. GitHub automatically labels
+bug reports `bug` and feature requests `enhancement`. An issue starts a
+discussion; a separate pull request can be opened to propose code changes.
+Report security vulnerabilities privately as described in [SECURITY.md](SECURITY.md),
+not in public issues.
 
 The maintainer will review reports, request missing information when needed,
 and use labels such as `bug`, `enhancement`, `duplicate`, and `help wanted` to
