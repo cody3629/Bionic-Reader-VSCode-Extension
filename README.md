@@ -23,7 +23,7 @@ If you sometimes struggle with reading or maintaining focus while working with c
 
 ## Installation
 
-You can install directly from the extensions tab or from the marketplace link once available and move on with no edits needed! If you wish to edit the settings to your personal preference, continue reading.
+Once the extension is published, install it from the VS Code Extensions view or the Marketplace. To try a local build before publication, follow the packaging instructions below and install the generated VSIX with the Extensions view's **Install from VSIX** command.
 
 ## Default Settings
 
@@ -71,25 +71,7 @@ The project is intended to remain lightweight and focused on its core functional
 
 # Contributing
 
-This extension is open source and anyone who would like to contribute to the improvement of this extension is welcome to do so! Continue reading if your're interested in contributing.
-
-## Getting Started (Contributing)
-
-- Fork the repo and clone your fork locally ([Bionic-Reader-VSCode-Extension](https://github.com/cody3629/Bionic-Reader-VSCode-Extension)).
-- Run `npm ci` to install dependencies.
-- Create a feature branch from main - do **not** push to the main branch directly.
-- Make your changes, and if applicable make sure they are tested with written unit tests, or update existing unit tets if applicable.
-- Run the test suite and verify your changes with `npm test` and `npm run check`
-- Push your feature branch to your fork and open a PR against the original repo.
-- Provide a clear, detailed summary explaining what you changed and why
-- PR will be code-reviewed and either accepted or rejected.
-
-## Rules when contributing
-
-- Do not push the `.vsix` file itself to the repo
-- Follow the code/syntax patterns established
-- Code must be readable and comprehensive
-- Code must have a purpose (Solving a real issue, improving an aspect, etc.)
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, issue triage, and pull request expectations, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
 
 ## Testing
 
@@ -107,7 +89,7 @@ The reading engine is intentionally independent of VS Code so its segmentation a
 ## Packaging
 
 ```sh
-npm install
+npm ci
 npm run package
 ```
 

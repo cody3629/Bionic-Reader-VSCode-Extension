@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible problem with the extension.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal example and relevant settings.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Extension version, VS Code version, and operating system
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Include screenshots or logs if helpful; remove sensitive information.
